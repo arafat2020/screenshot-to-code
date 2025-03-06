@@ -8,8 +8,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from routes import screenshot, generate_code, home, evals
 
-app = FastAPI(openapi_url=None, docs_url=None, redoc_url=None)
-
+app = FastAPI(docs_url="/docs", redoc_url="/redoc")
 # Configure CORS settings
 app.add_middleware(
     CORSMiddleware,
