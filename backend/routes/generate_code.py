@@ -19,7 +19,6 @@ from llm import (
     Completion,
     Llm,
     stream_claude_response,
-    stream_claude_response_native,
     stream_gemini_response,
     stream_openai_response,
 )
@@ -28,7 +27,6 @@ from mock_llm import mock_completion
 from typing import Any, Callable, Coroutine, Dict, List, Literal, cast, get_args
 from image_generation.core import generate_images
 from prompts import create_prompt
-from prompts.claude_prompts import VIDEO_PROMPT
 from prompts.types import Stack
 
 # from utils import pprint_prompt
@@ -232,23 +230,8 @@ async def stream_code(websocket: WebSocket):
     else:
         try:
             if input_mode == "video":
-                if not anthropic_api_key:
-                    await throw_error(
-                        "Video only works with Anthropic models. No Anthropic API key found. Please add the environment variable ANTHROPIC_API_KEY to backend/.env or in the settings dialog"
-                    )
-                    raise Exception("No Anthropic key")
-
-                completion_results = [
-                    await stream_claude_response_native(
-                        system_prompt=VIDEO_PROMPT,
-                        messages=prompt_messages,  # type: ignore
-                        api_key=anthropic_api_key,
-                        callback=lambda x: process_chunk(x, 0),
-                        model=Llm.CLAUDE_3_OPUS,
-                        include_thinking=True,
-                    )
-                ]
-                completions = [result["code"] for result in completion_results]
+                await throw_error("Currently, this feature is not available.")
+                raise Exception("Video generation is not supported at the moment.")
             else:
 
                 # Depending on the presence and absence of various keys,

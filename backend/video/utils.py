@@ -1,12 +1,10 @@
-# Extract HTML content from the completion string
 import base64
 import io
 import mimetypes
 import os
 import tempfile
 import uuid
-from typing import Any, Union, cast
-from moviepy.editor import VideoFileClip  # type: ignore
+from typing import Any, Union
 from PIL import Image
 import math
 
@@ -33,7 +31,6 @@ async def assemble_claude_prompt_video(video_data_url: str) -> list[Any]:
     # Convert images to the message format for Claude
     content_messages: list[dict[str, Union[dict[str, str], str]]] = []
     for image in images:
-
         # Convert Image to buffer
         buffered = io.BytesIO()
         image.save(buffered, format="JPEG")
@@ -61,7 +58,7 @@ async def assemble_claude_prompt_video(video_data_url: str) -> list[Any]:
     ]
 
 
-# Returns a list of images/frame (RGB format)
+# A placeholder function for image extraction (since no video is being processed)
 def split_video_into_screenshots(video_data_url: str) -> list[Image.Image]:
     target_num_screenshots = TARGET_NUM_SCREENSHOTS
 
@@ -72,30 +69,16 @@ def split_video_into_screenshots(video_data_url: str) -> list[Image.Image]:
     mime_type = video_data_url.split(";")[0].split(":")[1]
     suffix = mimetypes.guess_extension(mime_type)
 
+    # Save the video data as a temporary image file
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=True) as temp_video_file:
         print(temp_video_file.name)
         temp_video_file.write(video_bytes)
         temp_video_file.flush()
-        clip = VideoFileClip(temp_video_file.name)
+
+        # Now, load images (assuming video_data_url contains image data instead of a video)
         images: list[Image.Image] = []
-        total_frames = cast(int, clip.reader.nframes)  # type: ignore
-
-        # Calculate frame skip interval by dividing total frames by the target number of screenshots
-        # Ensuring a minimum skip of 1 frame
-        frame_skip = max(1, math.ceil(total_frames / target_num_screenshots))
-
-        # Iterate over each frame in the clip
-        for i, frame in enumerate(clip.iter_frames()):
-            # Save every nth frame
-            if i % frame_skip == 0:
-                frame_image = Image.fromarray(frame)  # type: ignore
-                images.append(frame_image)
-                # Ensure that we don't capture more than the desired number of frames
-                if len(images) >= target_num_screenshots:
-                    break
-
-        # Close the video file to release resources
-        clip.close()
+        img = Image.open(temp_video_file.name)
+        images.append(img)
 
         return images
 
