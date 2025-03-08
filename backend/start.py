@@ -1,4 +1,9 @@
 import uvicorn
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=7001, reload=True)
+    port = os.getenv("PORT", 8000)  # Use the PORT environment variable or default to 8000
+    uvicorn.run("main:app", host="0.0.0.0", port=int(port))
