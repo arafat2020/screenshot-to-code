@@ -51,6 +51,7 @@ propcache==0.2.1
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
 pycrypto==2.6.1
+pycryptodome==3.21.0
 pydantic==2.10.6
 pydantic_core==2.27.2
 PyJWT==2.10.1
