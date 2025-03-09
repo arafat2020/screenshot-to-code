@@ -1,0 +1,41 @@
+datasource db {
+  // could be postgresql or mysql
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_yfV40miCUQSD@ep-red-sea-a1wbpkrl-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
+}
+
+generator db {
+  provider             = "prisma-client-py"
+  interface            = "asyncio"
+  recursive_type_depth = 5
+}
+
+model UserInstance {
+  id           String        @id @default(uuid())
+  clerkId      String        @unique
+  email        String        @unique
+  isAdmin      Boolean       @default(false)
+  subscription Subscription?
+}
+
+model Subscription {
+  id                     String               @id @default(uuid())
+  userId                 String               @unique
+  planType               SubscriptionPlanType @default(FREE)
+  maxConversionsPerMonth Int                  @default(5)
+  aiEditorEnabled        Boolean              @default(false)
+  watermarkEnabled       Boolean              @default(true)
+  allowDownload          Boolean              @default(false)
+  startDate              DateTime             @default(now())
+  expiryDate             DateTime             @default(dbgenerated("CURRENT_TIMESTAMP + interval '30 days'"))
+
+  user UserInstance @relation(fields: [userId], references: [id])
+}
+
+enum SubscriptionPlanType {
+  FREE
+  BASIC
+  PRO
+  BUSINESS
+  PAY_AS_YOU_GO
+}
