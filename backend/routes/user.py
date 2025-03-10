@@ -20,7 +20,7 @@ class UserInstance(UserInstanceBase):
     id: UUID
 
     class Config:
-        orm_mode = True  # Allows Pydantic to work with ORM models (e.g., Prisma)
+        from_attributes = True  # Allows Pydantic to work with ORM models (e.g., Prisma)
 
 # Define a response model
 class TokenResponse(BaseModel):
