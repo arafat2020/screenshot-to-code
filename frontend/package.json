@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dev-hosted": "vite --mode prod",
-    "build": "tsc && vite build",
-    "build-hosted": "tsc && vite build --mode prod",
+    "dev": "node init && vite",
+    "dev-hosted": "node init && vite --mode prod",
+    "build": "node init && tsc && vite build",
+    "build-hosted": "node init && tsc && vite build --mode prod",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
     "test": "jest"
