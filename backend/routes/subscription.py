@@ -6,12 +6,14 @@ from datetime import datetime, timedelta, timezone
 import stripe
 import os
 from dotenv import load_dotenv
+import stripe.error
 
 load_dotenv()
 
 router = APIRouter()
 
 db = Prisma()
+webhook_secret = os.getenv("STRIPE_API_KEY")
 
 @router.post('/free_subscriptions')
 async def get_free_subscriptions(payload = Depends(get_current_user)):
@@ -51,50 +53,38 @@ async def get_free_subscriptions(payload = Depends(get_current_user)):
     
 
 @router.post("/webhook")
-async def stripe_webhook(
-    request: Request, stripe_signature: str = Header(None)
-):
-    """Handle Stripe webhooks."""
-    
-    payload = await request.body()
-    
+async def stripe_webhook(request: Request, stripe_signature: str = Header(None)):
+    """Handle Stripe webhooks securely."""
+    if not webhook_secret:
+        raise HTTPException(status_code=500, detail="Webhook secret is not set.")
+
+    payload = await request.body()  # Get raw request body
     try:
-        event = stripe.Webhook.construct_event(payload, stripe_signature, os.getenv("STRIPE_API_KEY"))
-    except stripe.error.SignatureVerificationError as e:
-        return HTTPException(400, "Failed to establish Stripe webhook signature")
+        # Verify and construct the event using Stripe's secret
+        event = stripe.Webhook.construct_event(
+            payload, stripe_signature, webhook_secret
+        )
+    except stripe.error.SignatureVerificationError:
+        print(stripe.error.SignatureVerificationError)
+        raise HTTPException(status_code=400, detail="Invalid signature")
 
     event_type = event["type"]
     data_object = event["data"]["object"]
 
-    try:
-        await db.connect()
-        print(event_type)
-        if event_type == "checkout.session.completed":
-            session = await stripe.checkout.Session.retrieve(
-                data_object["id"], expand=["line_items"]
-            )
-            customer_id = session.get("customer")
-            customer = await stripe.Customer.retrieve(customer_id)
-            price_id = session["line_items"]["data"][0]["price"]["id"]
+    print(f"🔹 Received event: {event_type}")  # Log event type
 
-            if not customer.get("email"):
-                raise ValueError("No user email found")
+    # Handle specific event types
+    if event_type == "checkout.session.completed":
+        print("✅ Payment successful for session:", data_object["id"])
 
-            user = await db.userinstance.find_unique(where={"email": customer["email"]})
-            print(event_type)
+    elif event_type == "invoice.paid":
+        print("✅ Invoice paid:", data_object["id"])
 
-        elif event_type == "customer.subscription.deleted":
-            subscription = await stripe.Subscription.retrieve(data_object["id"])
-            user = await db.userinstance.find_unique(where={"customerId": subscription["customer"]})
-            print(event_type)
+    elif event_type == "customer.subscription.deleted":
+        print("⚠️ Subscription canceled for:", data_object["customer"])
 
-
-    except Exception as e:
-        return HTTPException(400, e)
-    finally:
-        await db.disconnect()
-
-    return {"success": True}
+    # Respond to Stripe that the webhook was received successfully
+    return {"status": "success"}
 
 
 @router.post("/create-subscription")
