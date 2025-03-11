@@ -68,7 +68,7 @@ async def stripe_webhook(
 
     try:
         await db.connect()
-
+        print(event_type)
         if event_type == "checkout.session.completed":
             session = await stripe.checkout.Session.retrieve(
                 data_object["id"], expand=["line_items"]
@@ -81,11 +81,12 @@ async def stripe_webhook(
                 raise ValueError("No user email found")
 
             user = await db.userinstance.find_unique(where={"email": customer["email"]})
-
+            print(event_type)
 
         elif event_type == "customer.subscription.deleted":
             subscription = await stripe.Subscription.retrieve(data_object["id"])
             user = await db.userinstance.find_unique(where={"customerId": subscription["customer"]})
+            print(event_type)
 
 
     except Exception as e:
@@ -94,4 +95,25 @@ async def stripe_webhook(
         await db.disconnect()
 
     return {"success": True}
-    
+
+
+@router.post("/create-subscription")
+async def create_subscription(email: str, priceId: str):
+    try:
+        session = stripe.checkout.Session.create(
+            api_key=os.getenv("STRIPE_SECRET"),
+            payment_method_types=["card"],
+            mode="subscription",  # Ensure it's a recurring subscription
+            customer_email=email,  # Pre-fill email
+            line_items=[
+                {
+                    "price": priceId,  # Recurring monthly price ßfrom Stripe
+                    "quantity": 1,
+                }
+            ],
+            success_url="https://your-site.com/success",
+            cancel_url="https://your-site.com/cancel",
+        )
+        return {"url": session.url}  # Redirect user to Stripe Checkout
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
